@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.env
+
+# Database files
+*.sqlite
+*.db
+project3.db
+
+# ML model artifacts (can be retrained)
+analysis/models/*.pkl
+analysis/models/*.joblib
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+# Temp / Build
+dist/
+*.log
+
+# Large binary files from downloaded projects
+analysis/1920px-Portland_and_Mt._Hood_from_Pittock_Mansion*.jpg
+analysis/Crime Analysis 2019-2023 Presentation.pdf
+analysis/ETL of the data.ipynb
+analysis/project3.db
+analysis/Crime SQL.sql
+analysis/sqlite-query
+analysis/x-antilog/
+
+# Generated doc (keep the markdown version)
+server/generate-doc.js
+server/crimeDB.sqlite

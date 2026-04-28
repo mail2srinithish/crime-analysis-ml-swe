@@ -1,0 +1,33 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="auth-card animate-in">
+            <div class="auth-header">
+                <div style="width:60px;height:60px;border-radius:16px;background:var(--gradient-primary);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem;">
+                    <i class="fas fa-right-to-bracket" style="font-size:1.5rem;color:white;"></i>
+                </div>
+                <h2>Welcome Back</h2>
+                <p>Sign in to access the crime intelligence dashboard</p>
+            </div>
+            <div class="auth-body">
+                <form class="form-premium" action="/login" method="post" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label" for="email">Email Address</label>
+                        <input class="form-control" type="email" name="email" id="email" placeholder="you@example.com" required autofocus />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="password">Password</label>
+                        <input class="form-control" type="password" name="password" id="password" placeholder="••••••••" required />
+                    </div>
+                    <button class="btn btn-premium w-100 mt-2" id="login-submit">
+                        <i class="fas fa-arrow-right me-2"></i>Sign In
+                    </button>
+                    <p class="text-center mt-3" style="font-size:0.8rem;color:var(--text-muted);">
+                        Don't have an account? <a href="/signup" style="color:var(--accent-blue);text-decoration:none;">Create one</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

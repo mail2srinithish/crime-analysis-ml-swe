@@ -1,0 +1,71 @@
+<% layout('layouts/boilerplate') %>
+
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h1 class="page-title"><span class="gradient-text gradient-red">Smart Dispatch AI</span></h1>
+      <p class="subtitle mt-2">Real-time NLP automated triage of citizen complaints using Multinomial Naive Bayes</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <!-- High Priority Alert Banner -->
+      <% const criticals = complaints.filter(c => c.aiPriority === "CRITICAL"); %>
+      <% if(criticals.length > 0) { %>
+        <div class="alert" role="alert" style="background: rgba(225, 29, 72, 0.06); border: 1px solid rgba(225, 29, 72, 0.2); color: var(--accent-rose); border-radius: var(--radius-md);">
+          <strong><i class="fas fa-exclamation-triangle"></i> EMERGENCY DISPATCH:</strong> <%= criticals.length %> CRITICAL priority complaint(s) require immediate action.
+        </div>
+      <% } %>
+
+      <div class="table-responsive glass-panel" style="border-radius: 12px;">
+        <table class="table table-dark table-hover mb-0" style="background: transparent;">
+          <thead style="background: rgba(0,0,0,0.5);">
+            <tr>
+              <th scope="col">Time</th>
+              <th scope="col">Reporter</th>
+              <th scope="col">Location (District)</th>
+              <th scope="col">AI Category</th>
+              <th scope="col">AI Priority</th>
+              <th scope="col">Complaint Text</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% complaints.forEach(c => { 
+                let badgeClass = "bg-secondary";
+                if(c.aiPriority === "CRITICAL") badgeClass = "bg-danger flash-critical";
+                else if(c.aiPriority === "HIGH") badgeClass = "bg-warning text-dark";
+                else if(c.aiPriority === "MEDIUM") badgeClass = "bg-info text-dark";
+                else if(c.aiPriority === "LOW") badgeClass = "bg-success";
+            %>
+            <tr style="<%= c.aiPriority === 'CRITICAL' ? 'border-left: 4px solid var(--accent-rose); background: rgba(225,29,72,0.1);' : '' %>">
+              <td><%= new Date(c.createdAt).toLocaleTimeString() %></td>
+              <td><%= c.fullName %><br><small class="text-muted"><%= c.email %></small></td>
+              <td><%= c.district %></td>
+              <td><span class="badge text-bg-light"><%= c.aiCategory %></span></td>
+              <td><span class="badge <%= badgeClass %>" style="padding: 0.5em 0.8em; font-weight: 600;"><%= c.aiPriority %></span></td>
+              <td style="max-width: 300px; white-space: normal;"><%= c.complaint %></td>
+            </tr>
+            <% }) %>
+            <% if(complaints.length === 0) { %>
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">No citizen incident reports logged.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* CSS Animation for Critical Items */
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+    }
+    .flash-critical {
+        animation: pulse-red 2s infinite;
+        border: 1px solid #fff;
+    }
+  </style>

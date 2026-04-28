@@ -1,0 +1,247 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="page-header animate-in">
+    <h1><i class="fas fa-map-location-dot me-2" style="color: var(--accent-cyan);"></i>State Deep Analysis</h1>
+    <p class="subtitle">Comprehensive crime profile for <strong><%= stateName %></strong></p>
+</div>
+
+<!-- State Selector -->
+<div class="glass-card mb-4 animate-in">
+    <form method="get" action="/statewise" class="form-premium">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-9">
+                <label class="form-label" for="state">Select State / UT</label>
+                <select class="form-select" name="state" id="state">
+                    <% stateList.forEach(function(s) { %>
+                        <option value="<%= s.code %>" <%= selectedState === s.code ? 'selected' : '' %>><%= s.name %></option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-premium w-100" id="statewise-submit">
+                    <i class="fas fa-search me-2"></i>Analyse
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6 animate-in">
+        <div class="stat-card blue">
+            <div class="stat-icon"><i class="fas fa-gavel"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;"><%= ipcReports[ipcReports.length-1]?.toLocaleString('en-IN') || '0' %></div>
+            <div class="stat-label">IPC Crimes (2026)</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 animate-in">
+        <div class="stat-card purple">
+            <div class="stat-icon"><i class="fas fa-scale-balanced"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;"><%= sllReports[sllReports.length-1]?.toLocaleString('en-IN') || '0' %></div>
+            <div class="stat-label">SLL Crimes (2026)</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 animate-in">
+        <div class="stat-card <%= stateScore.safety_score > 60 ? 'emerald' : stateScore.safety_score > 30 ? 'cyan' : 'rose' %>">
+            <div class="stat-icon"><i class="fas fa-shield-halved"></i></div>
+            <div class="stat-value" style="font-size:1.4rem;"><%= stateScore.safety_score %><span style="font-size:0.7rem;">/100</span></div>
+            <div class="stat-label">Safety Score</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 animate-in">
+        <div class="stat-card rose">
+            <div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div>
+            <div class="stat-value" style="font-size:1.2rem;"><%= stateScore.risk_label %></div>
+            <div class="stat-label">Risk Level</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8 animate-in">
+        <div class="chart-container">
+            <div class="chart-title"><span class="dot blue"></span> Crime Trend — <%= stateName %></div>
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Maps and Split -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8 animate-in">
+        <div class="chart-container">
+            <div class="flex-between">
+                <div class="chart-title"><span class="dot purple"></span> Deep-Dive District Micro-Hotspots</div>
+                <div style="font-size: 0.75rem;"><span class="dot emeral" style="background:#ef4444;"></span> Very High &nbsp; <span class="dot" style="background:#f59e0b;"></span> Med/High</div>
+            </div>
+            <div id="districtMap" style="height: 350px; border-radius: 8px; z-index: 1;"></div>
+        </div>
+    </div>
+    <div class="col-lg-4 animate-in">
+        <div class="chart-container">
+            <div class="chart-title"><span class="dot purple"></span> IPC vs SLL Split (2026)</div>
+            <canvas id="splitChart" style="max-height: 250px;"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6 animate-in">
+        <div class="chart-container">
+            <div class="chart-title"><span class="dot cyan"></span> Year-over-Year Growth Rate (%)</div>
+            <canvas id="growthChart"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-6 animate-in">
+        <div class="chart-container">
+            <div class="chart-title">
+                <span class="dot emerald"></span> ML Prediction (Random Forest)
+                <% if(rfPrediction) { %>
+                <span style="font-size:0.65rem; padding:2px 6px; border-radius:4px; background:rgba(16,185,129,0.12); color:var(--accent-emerald); margin-left:0.5rem;">
+                    <%= rfPrediction.confidence %>
+                </span>
+                <% } %>
+            </div>
+            <canvas id="predChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Data Table -->
+<div class="glass-card mb-4 animate-in">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="chart-title mb-0"><span class="dot blue"></span> Yearly Data Table</div>
+        <a href="/api/export/csv?state=<%= encodeURIComponent(stateName) %>" class="btn btn-outline-premium btn-sm">
+            <i class="fas fa-download me-1"></i> Export CSV
+        </a>
+    </div>
+    <div style="max-height: 300px; overflow-y: auto;">
+        <table class="state-table">
+            <thead><tr><th>Year</th><th>IPC</th><th>SLL</th><th>Total</th><th>Growth %</th></tr></thead>
+            <tbody>
+            <% years.forEach(function(y, i) { %>
+                <tr>
+                    <td><%= y %></td>
+                    <td><%= (ipcReports[i] || 0).toLocaleString('en-IN') %></td>
+                    <td><%= (sllReports[i] || 0).toLocaleString('en-IN') %></td>
+                    <td><%= ((ipcReports[i]||0) + (sllReports[i]||0)).toLocaleString('en-IN') %></td>
+                    <td style="color: <%= growthRates[i] > 0 ? 'var(--accent-rose)' : 'var(--accent-emerald)' %>;">
+                        <%= growthRates[i] > 0 ? '+' : '' %><%= growthRates[i] %>%
+                    </td>
+                </tr>
+            <% }); %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const years = <%- JSON.stringify(years) %>;
+const ipcData = <%- JSON.stringify(ipcReports) %>;
+const sllData = <%- JSON.stringify(sllReports) %>;
+const growthRates = <%- JSON.stringify(growthRates) %>;
+const rfPred = <%- JSON.stringify(rfPrediction) %>;
+
+Chart.defaults.color = '#475569';
+Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
+
+// Trend chart
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: { labels: years, datasets: [
+        { label: 'IPC', data: ipcData, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, borderWidth: 2 },
+        { label: 'SLL', data: sllData, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.08)', fill: true, tension: 0.4, borderWidth: 2 }
+    ]},
+    options: { responsive: true, interaction: { intersect: false, mode: 'index' },
+        plugins: { legend: { position: 'top', labels: { usePointStyle: true } } },
+        scales: { y: { ticks: { callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+    }
+});
+
+// Split pie
+new Chart(document.getElementById('splitChart'), {
+    type: 'doughnut',
+    data: { labels: ['IPC','SLL'], datasets: [{ data: [ipcData[ipcData.length-1], sllData[sllData.length-1]], backgroundColor: ['#3b82f6','#8b5cf6'], borderColor: '#ffffff', borderWidth: 2 }] },
+    options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } } }
+});
+
+// Growth chart
+new Chart(document.getElementById('growthChart'), {
+    type: 'bar',
+    data: { labels: years, datasets: [{
+        label: 'Growth %', data: growthRates,
+        backgroundColor: growthRates.map(v => v > 0 ? 'rgba(244,63,94,0.6)' : 'rgba(16,185,129,0.6)'),
+        borderRadius: 4
+    }]},
+    options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { ticks: { callback: v => v+'%' }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+    }
+});
+
+// Prediction chart
+if (rfPred) {
+    const allLabels = [...rfPred.historical_years, ...rfPred.future_years];
+    const hist = [...rfPred.historical_counts, ...new Array(rfPred.future_years.length).fill(null)];
+    const pred = [...new Array(rfPred.historical_counts.length).fill(null), ...rfPred.predictions];
+    new Chart(document.getElementById('predChart'), {
+        type: 'line',
+        data: { labels: allLabels, datasets: [
+            { label: 'Historical', data: hist, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', fill: true, tension: 0.4, borderWidth: 2, spanGaps: false },
+            { label: 'RF Prediction', data: pred, borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.08)', fill: true, tension: 0.4, borderWidth: 2.5, borderDash: [8,4], pointRadius: 6, spanGaps: false }
+        ]},
+        options: { responsive: true, interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { position: 'top', labels: { usePointStyle: true } } },
+            scales: { y: { ticks: { callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+        }
+    });
+} else {
+    document.getElementById('predChart').parentElement.innerHTML += '<p style="color:var(--text-muted);text-align:center;padding:2rem;">Start the Flask ML server for Random Forest predictions</p>';
+}
+
+// District Map Integration
+const districtHotspots = <%- JSON.stringify(districtHotspots) %>;
+if(districtHotspots && districtHotspots.length > 0) {
+    const map = L.map('districtMap').setView([20.5937, 78.9629], 5);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
+
+    let bounds = [];
+    districtHotspots.forEach(d => {
+        // Pseudo-random coordinates scattered around central India for mock display if no geo-data exists.
+        // For a real app, you'd match the district name to lat/long. Let's just create a scatter based on a hash of the name for visual effect.
+        const hash = d.district.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
+        // Base center roughly India
+        const lat = 20.5937 + (hash % 100) / 10.0 * (hash % 2 === 0 ? 1 : -1);
+        const lng = 78.9629 + ((hash >> 4) % 100) / 10.0 * (hash % 3 === 0 ? 1 : -1);
+        
+        let color = '#3b82f6';
+        if(d.risk_level === 4) color = '#ef4444';      // Very High
+        else if(d.risk_level === 3) color = '#f59e0b'; // High
+        else if(d.risk_level === 2) color = '#8b5cf6'; // Med
+        
+        const marker = L.circleMarker([lat, lng], {
+            radius: d.risk_level * 3 + 4,
+            fillColor: color,
+            color: '#fff',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map);
+        
+        marker.bindPopup(`
+            <div style="font-family:Inter;color:#333;">
+                <strong>District: ${d.district}</strong><br>
+                Target Level: ${d.risk_label}<br>
+                Total Crime: ${d.total_crimes.toLocaleString('en-IN')}
+            </div>
+        `);
+        bounds.push([lat, lng]);
+    });
+    if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
+} else {
+    document.getElementById('districtMap').innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--text-muted);">No district-level heatmap data available for this state.</div>';
+}
+</script>

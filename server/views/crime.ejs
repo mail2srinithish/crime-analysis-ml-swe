@@ -1,0 +1,47 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="page-header animate-in">
+    <h1><i class="fas fa-list-check me-2" style="color: var(--accent-cyan);"></i>Crime Reports</h1>
+    <p class="subtitle">All filed crime complaints &mdash; <%= item.length %> report<%= item.length !== 1 ? 's' : '' %> found</p>
+</div>
+
+<% if(item.length === 0) { %>
+<div class="glass-card text-center py-5 animate-in">
+    <i class="fas fa-inbox" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+    <p style="color: var(--text-muted); font-size: 1.1rem;">No complaints filed yet</p>
+    <a href="/complaint" class="btn btn-premium mt-2">
+        <i class="fas fa-plus me-2"></i>File a Report
+    </a>
+</div>
+<% } %>
+
+<div class="row g-3">
+<% for(let crime of item){ %>
+    <div class="col-lg-6 animate-in">
+        <div class="complaint-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <span class="complaint-type"><%= crime.complaintType %></span>
+                    <h5 style="font-weight: 600; margin: 0.5rem 0 0.25rem; font-size: 1rem;">
+                        <i class="fas fa-user me-1" style="color:var(--accent-blue);"></i> <%= crime.fullName %>
+                    </h5>
+                </div>
+                <span class="complaint-meta">
+                    <i class="fas fa-calendar me-1"></i> <%= crime.crimeDate %>
+                </span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                <%= crime.complaint %>
+            </p>
+            <div class="d-flex justify-content-between complaint-meta">
+                <span>
+                    <i class="fas fa-location-dot me-1"></i> <%= crime.district %>, <%= crime.address %>
+                </span>
+                <span>
+                    <a href="mailto:<%= crime.email %>"><i class="fas fa-envelope me-1"></i><%= crime.email %></a>
+                </span>
+            </div>
+        </div>
+    </div>
+<% } %>
+</div>

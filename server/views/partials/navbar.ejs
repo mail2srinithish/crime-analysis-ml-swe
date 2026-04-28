@@ -1,0 +1,52 @@
+<nav class="navbar navbar-expand-lg navbar-premium sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-shield-halved me-2"></i>CrimeAnalysis ML
+        </a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="/" id="nav-home">
+                    <i class="fas fa-house-chimney me-1"></i> Home
+                </a>
+                <a class="nav-link" href="/dashboard" id="nav-dashboard">
+                    <i class="fas fa-chart-line me-1"></i> Dashboard
+                </a>
+                <a class="nav-link" href="/predict" id="nav-predict">
+                    <i class="fas fa-brain me-1"></i> ML Predict
+                </a>
+                <a class="nav-link" href="/compare" id="nav-compare">
+                    <i class="fas fa-code-compare me-1"></i> Compare
+                </a>
+                <a class="nav-link" href="/statewise" id="nav-statewise">
+                    <i class="fas fa-map-location-dot me-1"></i> State Analysis
+                </a>
+                <a class="nav-link" href="/livefeed" id="nav-livefeed">
+                    <i class="fas fa-rss me-1"></i> Live Feed
+                </a>
+                <a class="nav-link" href="/complaint" id="nav-complaint">
+                    <i class="fas fa-file-signature me-1"></i> Report
+                </a>
+                <a class="nav-link" href="/triage" id="nav-triage" style="color: var(--accent-rose);">
+                    <i class="fas fa-truck-medical me-1"></i> AI Triage
+                </a>
+            </div>
+            <div class="navbar-nav">
+                <% if(!currentUser){ %>
+                <a class="nav-link" href="/login" id="nav-login">
+                    <i class="fas fa-right-to-bracket me-1"></i> Login
+                </a>
+                <a class="nav-link" href="/signup" id="nav-signup">
+                    <i class="fas fa-user-plus me-1"></i> Sign Up
+                </a>
+                <% } else { %>
+                <a class="nav-link" href="/logout" id="nav-logout">
+                    <i class="fas fa-right-from-bracket me-1"></i> Logout
+                </a>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</nav>

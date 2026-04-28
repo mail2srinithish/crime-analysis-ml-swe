@@ -1,0 +1,197 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="page-header animate-in">
+    <h1><i class="fas fa-brain me-2" style="color: var(--accent-purple);"></i>ML Crime Prediction</h1>
+    <p class="subtitle">Forecast future crime trends using Machine Learning models (Random Forest & Linear Regression)</p>
+</div>
+
+<div class="row g-4">
+    <!-- Controls Panel -->
+    <div class="col-lg-4 animate-in">
+        <div class="glass-card">
+            <h5 style="font-weight: 700; margin-bottom: 1rem;">
+                <i class="fas fa-sliders me-2" style="color: var(--accent-cyan);"></i>Prediction Controls
+            </h5>
+            <form method="get" action="/predict" class="form-premium">
+                <div class="mb-3">
+                    <label class="form-label" for="crimetype">Crime Category</label>
+                    <select class="form-select" name="crimetype" id="crimetype">
+                        <option value="i" <%= selectedType === 'i' ? 'selected' : '' %>>IPC (Indian Penal Code)</option>
+                        <option value="s" <%= selectedType === 's' ? 'selected' : '' %>>SLL (Special & Local Laws)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="state">State / UT</label>
+                    <select class="form-select" name="state" id="state">
+                        <% stateList.forEach(function(s) { %>
+                            <option value="<%= s.code %>" <%= selectedState === s.code ? 'selected' : '' %>><%= s.name %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <button class="btn btn-premium w-100" id="predict-submit">
+                    <i class="fas fa-wand-magic-sparkles me-2"></i>Run Prediction
+                </button>
+            </form>
+
+            <!-- Model Info -->
+            <div class="mt-4" style="border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                <h6 style="font-weight: 600; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Model Information
+                </h6>
+                <div class="d-flex justify-content-between mt-2" style="font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">State</span>
+                    <span style="font-weight: 600;"><%= stateName %></span>
+                </div>
+                <div class="d-flex justify-content-between mt-1" style="font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">Category</span>
+                    <span style="font-weight: 600;"><%= selectedType === 'i' ? 'IPC' : 'SLL' %></span>
+                </div>
+                <div class="d-flex justify-content-between mt-1" style="font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">ML Model</span>
+                    <span style="font-weight: 600; color: var(--accent-emerald);"><%= modelName %></span>
+                </div>
+                <div class="d-flex justify-content-between mt-1" style="font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">Confidence</span>
+                    <span style="font-weight: 600; color: var(--accent-cyan);"><%= confidence %></span>
+                </div>
+                <div class="d-flex justify-content-between mt-1" style="font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">Historical</span>
+                    <span style="font-weight: 600;">2003 – 2026</span>
+                </div>
+                <div class="d-flex justify-content-between mt-1" style="font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">Forecast</span>
+                    <span style="font-weight: 600; color: var(--accent-rose);">2027 – 2031</span>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="mt-3" style="border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                <a href="/statewise?state=<%= selectedState %>" class="btn btn-outline-premium btn-sm w-100 mb-2">
+                    <i class="fas fa-map me-1"></i> Deep State Analysis
+                </a>
+                <a href="/api/export/csv?state=<%= encodeURIComponent(stateName) %>" class="btn btn-outline-premium btn-sm w-100">
+                    <i class="fas fa-download me-1"></i> Export CSV
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Panel -->
+    <div class="col-lg-8 animate-in">
+        <div class="chart-container" style="height: 100%;">
+            <div class="chart-title">
+                <span class="dot purple"></span> Historical + Predicted Crime Trend — <%= stateName %>
+                <span style="font-size:0.65rem; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.12); color:var(--accent-emerald); margin-left:0.5rem;">
+                    <i class="fas fa-brain me-1"></i><%= modelName %>
+                </span>
+            </div>
+            <canvas id="predictionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Predicted Values Cards -->
+<div class="row g-3 mt-3">
+    <% for(let i = 0; i < predictedYears.length; i++) { %>
+    <div class="col-lg col-md-4 col-6 animate-in">
+        <div class="stat-card <%= ['blue','purple','cyan','emerald','rose'][i % 5] %>">
+            <div class="stat-value" style="font-size: 1.3rem;"><%= typeof predictedValues[i] === 'number' ? predictedValues[i].toLocaleString('en-IN') : predictedValues[i] %></div>
+            <div class="stat-label">
+                Predicted <%= predictedYears[i] %>
+                <% if(lrPredictedValues && lrPredictedValues[i] !== predictedValues[i]) { %>
+                <br><span style="font-size:0.6rem; color: var(--text-muted);">LR: <%= typeof lrPredictedValues[i] === 'number' ? lrPredictedValues[i].toLocaleString('en-IN') : lrPredictedValues[i] %></span>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    <% } %>
+</div>
+
+<!-- Phase 3: AI Resource Allocation Optimizer -->
+<div class="row mt-4">
+    <div class="col-12 animate-in">
+        <div class="chart-container" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3);">
+            <% 
+               const avgHist = staticData.reduce((a,b)=>a+b, 0) / staticData.length || 1;
+               const avgPred = predictedValues.reduce((a,b)=>a+b, 0) / predictedValues.length || 1;
+               const officerRatio = 125; // 1 officer per 125 recorded crimes
+               const requiredHeadcount = Math.ceil(avgPred / officerRatio);
+               const currentHeadcount = Math.ceil(avgHist / officerRatio);
+               const deficit = requiredHeadcount - currentHeadcount;
+               const budgetDeficit = Math.abs(deficit * 6.5); // assume 6.5 lakh per officer per year
+            %>
+            <h4 style="color: var(--accent-emerald); font-size: 1.1rem; margin-bottom: 1rem;">
+                <i class="fas fa-users-viewfinder me-2"></i>Resource Allocation Optimizer (ML Recommendation)
+            </h4>
+            <div class="row">
+                <div class="col-md-4">
+                    <div style="font-size: 2rem; font-weight: 700; color: #fff;"><%= requiredHeadcount.toLocaleString('en-IN') %></div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); padding-bottom: 5px;">Required Police Personnel (5-Yr Forecast)</div>
+                </div>
+                <div class="col-md-4">
+                    <% if(deficit > 0) { %>
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-rose);">+<%= deficit.toLocaleString('en-IN') %></div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Deficit Personnel Needed</div>
+                    <% } else { %>
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-emerald);"><%= Math.abs(deficit).toLocaleString('en-IN') %></div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Surplus Personnel Allowed</div>
+                    <% } %>
+                </div>
+                <div class="col-md-4">
+                    <% if(deficit > 0) { %>
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-rose);">₹<%= budgetDeficit.toFixed(2) %> Cr</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Req. Budget Expansion (₹6.5L/Officer)</div>
+                    <% } else { %>
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-emerald);">Optimal</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Budget Forecast</div>
+                    <% } %>
+                </div>
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.85rem; color: #94a3b8; margin-bottom: 0;">
+                *Based on a machine learning projection ratio of 1 law enforcement officer per 125 projected IPC/SLL crimes over the upcoming forecasted cycle for <strong><%= stateName %></strong>.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+const historicalLabels = <%- JSON.stringify(labels) %>;
+const historicalData = <%- JSON.stringify(staticData) %>;
+const predictedYears = <%- JSON.stringify(predictedYears) %>;
+const predictedValues = <%- JSON.stringify(predictedValues) %>;
+const lrPredictedValues = <%- JSON.stringify(lrPredictedValues || []) %>;
+
+const allLabels = [...historicalLabels, ...predictedYears];
+const allHistorical = [...historicalData, ...new Array(predictedYears.length).fill(null)];
+const allPredicted = [...new Array(historicalData.length).fill(null), ...predictedValues];
+
+const datasets = [
+    { label: 'Historical Data', data: allHistorical, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2.5, spanGaps: false },
+    { label: 'RF Prediction', data: allPredicted, borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.08)', fill: true, tension: 0.4, pointRadius: 6, borderWidth: 2.5, borderDash: [8,4], spanGaps: false },
+];
+
+// Add LR line if different from main prediction
+if (lrPredictedValues.length > 0) {
+    const allLR = [...new Array(historicalData.length).fill(null), ...lrPredictedValues];
+    datasets.push({
+        label: 'Linear Regression', data: allLR,
+        borderColor: '#f59e0b', backgroundColor: 'transparent',
+        tension: 0.4, pointRadius: 4, borderWidth: 1.5, borderDash: [4,4], spanGaps: false
+    });
+}
+
+Chart.defaults.color = '#475569';
+Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
+
+new Chart(document.getElementById('predictionChart'), {
+    type: 'line',
+    data: { labels: allLabels, datasets },
+    options: {
+        responsive: true, interaction: { intersect: false, mode: 'index' },
+        plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 15 } },
+            tooltip: { callbacks: { label: ctx => ctx.raw === null ? null : ctx.dataset.label + ': ' + ctx.raw.toLocaleString('en-IN') } }
+        },
+        scales: { y: { ticks: { callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+    }
+});
+</script>

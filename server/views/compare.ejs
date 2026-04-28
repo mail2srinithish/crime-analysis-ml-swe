@@ -1,0 +1,182 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="page-header animate-in">
+    <h1><i class="fas fa-code-compare me-2" style="color: var(--accent-purple);"></i>State Comparison</h1>
+    <p class="subtitle">Side-by-side comparison of crime statistics between two Indian states</p>
+</div>
+
+<!-- Selection Form -->
+<div class="glass-card mb-4 animate-in">
+    <form method="get" action="/compare" class="form-premium">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="state1">State 1</label>
+                <select class="form-select" name="state1" id="state1">
+                    <% stateList.forEach(function(s) { %>
+                        <option value="<%= s.code %>" <%= selectedState1 === s.code ? 'selected' : '' %>><%= s.name %></option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="col-md-1 text-center" style="font-size: 1.5rem; color: var(--accent-purple);">
+                <i class="fas fa-arrows-left-right"></i>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="state2">State 2</label>
+                <select class="form-select" name="state2" id="state2">
+                    <% stateList.forEach(function(s) { %>
+                        <option value="<%= s.code %>" <%= selectedState2 === s.code ? 'selected' : '' %>><%= s.name %></option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-premium w-100" id="compare-submit">
+                    <i class="fas fa-code-compare me-2"></i>Compare
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6 animate-in">
+        <div class="stat-card blue">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label mb-1"><%= comparison.state1.name %></div>
+                    <div class="stat-value" style="font-size: 1.4rem;">
+                        <%= comparison.state1.ipc[comparison.state1.ipc.length-1]?.toLocaleString('en-IN') || 'N/A' %>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">IPC Crimes (Latest)</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size:0.75rem; color: var(--text-muted);">Safety Score</div>
+                    <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-blue);">
+                        <%= comparison.state1.safety_score %>
+                    </div>
+                    <span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background: rgba(59,130,246,0.12); color: var(--accent-blue);">
+                        <%= comparison.state1.risk_label %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 animate-in">
+        <div class="stat-card purple">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label mb-1"><%= comparison.state2.name %></div>
+                    <div class="stat-value" style="font-size: 1.4rem;">
+                        <%= comparison.state2.ipc[comparison.state2.ipc.length-1]?.toLocaleString('en-IN') || 'N/A' %>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">IPC Crimes (Latest)</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size:0.75rem; color: var(--text-muted);">Safety Score</div>
+                    <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-purple);">
+                        <%= comparison.state2.safety_score %>
+                    </div>
+                    <span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; background: rgba(139,92,246,0.12); color: var(--accent-purple);">
+                        <%= comparison.state2.risk_label %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comparison Charts -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-6 animate-in">
+        <div class="chart-container">
+            <div class="chart-title"><span class="dot blue"></span> IPC Crime Trend Comparison</div>
+            <canvas id="ipcCompareChart"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-6 animate-in">
+        <div class="chart-container">
+            <div class="chart-title"><span class="dot purple"></span> SLL Crime Trend Comparison</div>
+            <canvas id="sllCompareChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-6 animate-in">
+        <div class="chart-container">
+            <div class="chart-title"><span class="dot cyan"></span> Total Crime (IPC+SLL) Comparison</div>
+            <canvas id="totalCompareChart"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-6 animate-in">
+        <div class="chart-container">
+            <div class="chart-title"><span class="dot emerald"></span> Growth Rate Comparison</div>
+            <canvas id="growthCompareChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Export -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6 animate-in">
+        <a href="/api/export/csv?state=<%= encodeURIComponent(comparison.state1.name) %>" class="btn btn-outline-premium w-100">
+            <i class="fas fa-download me-2"></i>Download <%= comparison.state1.name %> CSV
+        </a>
+    </div>
+    <div class="col-md-6 animate-in">
+        <a href="/api/export/csv?state=<%= encodeURIComponent(comparison.state2.name) %>" class="btn btn-outline-premium w-100">
+            <i class="fas fa-download me-2"></i>Download <%= comparison.state2.name %> CSV
+        </a>
+    </div>
+</div>
+
+<script>
+const data = <%- JSON.stringify(comparison) %>;
+const years = data.years;
+Chart.defaults.color = '#475569';
+Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
+
+const chartOpts = {
+    responsive: true, interaction: { intersect: false, mode: 'index' },
+    plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 15 } } },
+    scales: { y: { ticks: { callback: v => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { grid: { display: false } } }
+};
+
+new Chart(document.getElementById('ipcCompareChart'), {
+    type: 'line',
+    data: { labels: years, datasets: [
+        { label: data.state1.name, data: data.state1.ipc, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)', fill: true, tension: 0.4, borderWidth: 2 },
+        { label: data.state2.name, data: data.state2.ipc, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.08)', fill: true, tension: 0.4, borderWidth: 2 }
+    ]}, options: chartOpts
+});
+
+new Chart(document.getElementById('sllCompareChart'), {
+    type: 'line',
+    data: { labels: years, datasets: [
+        { label: data.state1.name, data: data.state1.sll, borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)', fill: true, tension: 0.4, borderWidth: 2 },
+        { label: data.state2.name, data: data.state2.sll, borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.08)', fill: true, tension: 0.4, borderWidth: 2 }
+    ]}, options: chartOpts
+});
+
+// Total crimes
+const total1 = data.state1.ipc.map((v, i) => v + (data.state1.sll[i] || 0));
+const total2 = data.state2.ipc.map((v, i) => v + (data.state2.sll[i] || 0));
+new Chart(document.getElementById('totalCompareChart'), {
+    type: 'bar',
+    data: { labels: years, datasets: [
+        { label: data.state1.name, data: total1, backgroundColor: 'rgba(59,130,246,0.6)', borderRadius: 4 },
+        { label: data.state2.name, data: total2, backgroundColor: 'rgba(139,92,246,0.6)', borderRadius: 4 }
+    ]}, options: chartOpts
+});
+
+// Growth rate
+const gr1 = data.state1.ipc.map((v,i) => i===0 ? 0 : ((v - data.state1.ipc[i-1]) / Math.max(data.state1.ipc[i-1],1)*100).toFixed(1));
+const gr2 = data.state2.ipc.map((v,i) => i===0 ? 0 : ((v - data.state2.ipc[i-1]) / Math.max(data.state2.ipc[i-1],1)*100).toFixed(1));
+new Chart(document.getElementById('growthCompareChart'), {
+    type: 'line',
+    data: { labels: years, datasets: [
+        { label: data.state1.name, data: gr1, borderColor: '#10b981', tension: 0.4, borderWidth: 2, pointRadius: 3 },
+        { label: data.state2.name, data: gr2, borderColor: '#f59e0b', tension: 0.4, borderWidth: 2, pointRadius: 3 }
+    ]}, options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ticks: { callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.04)' } } } }
+});
+</script>

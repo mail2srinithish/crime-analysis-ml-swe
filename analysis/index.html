@@ -1,0 +1,165 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Portland - Crime</title>
+  <
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="" /> 
+
+  <!-- Our CSS -->
+  <link rel="stylesheet" type="text/css" href="static/css/style.css">
+  <link rel="stylesheet" href="Barstyle.css">
+
+  <!-- Marker cluster CSS -->
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet.markercluster@1.0.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet.markercluster@1.0.3/dist/MarkerCluster.Default.css">
+  <!-- Mapkey CSS -->
+  <link rel="stylesheet" href="dist\L.Icon.Mapkey.css" />
+</head>
+
+
+   
+<body>
+  <img src="1920px-Portland_and_Mt._Hood_from_Pittock_Mansion (1).jpg" alt="Portland, Oregon" width="100%" height="600" class="translucent-image" style="align-items: center;">
+  
+   <div class="neato-header">
+    <h1 style="text-align:center; font-family: 'Roboto', sans-serif">Portland, Oregon Crime Rate Analysis</h1>
+    <h2 style="text-align:center; font-family: 'Roboto', sans-serif"> 2019 - 2023 </h2>
+    <a href="https://github.com/jnliou/project3">
+    <button style="text-align:center; font-family: 'Roboto', sans-serif"> Git Hub Repo</button> </a>
+  
+  <a href="https://public.tableau.com/app/profile/portlandpolicebureau/viz/New_Monthly_Neighborhood/MonthlyOffenseTotals">
+  <button style="text-align:center; font-family: 'Roboto', sans-serif"> Data Source</button>
+  </a>
+<!-- The div that holds our map -->
+<br>
+<div id="map" style = "width: 100%; height: 500px; border: 3px solid #0f0101;"></div>
+<br>
+<br>
+  
+<!-- The div that holds our line & bar chart -->
+    <div id="crimeDropdownContainer"></div>
+      <label for="crimeDropdown">Crime Against:</label>
+      <select id="crimeDropdown">
+        <option value="Person">Person</option>
+        <option value="Property">Property</option>
+        <option value="Society">Society</option>
+      </select>
+    </div>
+    
+    <div class="container">
+      <div class="row">
+        <div class="col-6">
+          <div id="lineChartContainer" style="width: 50rem">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div id="controls" style = "width: 40rem">    
+        <label for="crimeSelect">Select Crime:</label>
+        <select id="crimeSelect"></select>
+        <div id="bar"> </div>
+      </div>
+    </div>
+
+<style> visualization-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-gap: 20px;
+  }
+  .visualization {
+      padding: 20px;
+      border: 1px solid #ccc;
+  }
+</style>
+
+<!-- The div that holds our pie chart and pivot table -->
+
+      <div class="filters">
+      <label for="neighborhood">Neighborhood:</label>
+      <select id="neighborhood"></select>
+      <label for="timePeriod">Time Period:</label>
+      <select id="timePeriod"></select>
+    </div>
+<div class="container">
+<div class="row">
+<div class="col-4">
+<div id="container" style="width: 50rem">
+      <div id="pie"></div>
+    </div>
+  </div>
+</div>
+<div id="pivot-table" style = "width: 40rem">  
+  <h3>Top 5 Neighborhoods with Crime and their Total Crime from 2019-2023</h3>  
+  <div class="pivot-table-container"></div>
+  <div class="filters"></div>
+  <div id="pivot-table"> </div>
+  <div id="neighborhood-table"></div>
+  <h3 align = "center"> Total Offenses of the Top 3 Neighborhood with Crime and the Time of Day the Offense Occurred</h3>
+  <br><label for="pivot-table-dropdown">Top 3 Neighborhoods:</label>
+  <select id="neighborhood2"></select></div>
+</div>
+
+<!-- This div contains total line chart -->
+<h3> Overall Criminal Offense Cases from 2019 to 2022</h3>  
+<div class="container">
+  <div class="row">
+    <!-- <div class="col-12"> -->
+      <div id="totalChartContainer" style="width: 100%; height: 500px; border: 3px solid #0f0101;">
+        <canvas id="totalChart"></canvas>
+      </div>
+     
+
+  <!-- Include Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Include Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+
+  <!-- Include the d3.js libraries -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <!-- Leaflet JS -->
+   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+   crossorigin=""></script> 
+
+ 
+  <!-- Our JavaScript -->
+
+  <!-- The script linked to bar chart -->
+  <script type="text/javascript" src="static/js/bar.js"></script>
+
+  <!-- The script linked to line chart -->
+  
+  <script type="text/javascript" src="static/js/linechart.js"></script>
+
+  <!-- The script linked to Map chart -->
+  <script type="text/javascript" src="static/js/pie.js"></script>
+
+  <!-- The script linked to pie chart -->
+  <script type="text/javascript" src="static/js/logic.js"></script>
+
+  <!-- The script linked to neighborhood table -->
+  <script type="text/javascript" src="static/js/neighborhood.js"></script>
+
+  <!-- The script linked to totalchart -->
+  <script type="text/javascript" src="static/js/totalchart.js"></script>
+
+  <!-- Our mapkey JS -->
+  <script src="dist\L.Icon.Mapkey.js"></script>
+  
+  
+  <!-- Marker cluster JavaScript code -->
+  <script type="text/javascript" src="https://unpkg.com/leaflet.markercluster@1.0.3/dist/leaflet.markercluster.js"></script>
+
+</body>
+
+</html>

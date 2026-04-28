@@ -1,0 +1,61 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="glass-card animate-in">
+            <div class="page-header mb-4">
+                <h1><i class="fas fa-file-signature me-2" style="color: var(--accent-rose);"></i>File Crime Report</h1>
+                <p class="subtitle">Submit a crime complaint &mdash; all reports are securely stored</p>
+            </div>
+            <form class="form-premium" action="/complaint" method="post" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="fullName">Full Name</label>
+                        <input class="form-control" type="text" name="fullName" id="fullName" placeholder="Enter your full name" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email</label>
+                        <input class="form-control" type="email" name="email" id="email" placeholder="you@example.com" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="crimeDate">Date of Crime</label>
+                        <input class="form-control" type="date" id="crimeDate" name="crimeDate" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="district">District</label>
+                        <input class="form-control" type="text" id="district" name="district" placeholder="Enter district" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="address">Address</label>
+                        <input class="form-control" type="text" id="address" name="address" placeholder="Enter full address" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="complaintType">Crime Category</label>
+                        <select class="form-select" name="complaintType" id="complaintType">
+                            <option value="murder">Murder</option>
+                            <option value="dowry">Dowry</option>
+                            <option value="assault">Assault</option>
+                            <option value="theft">Theft</option>
+                            <option value="robbery">Robbery</option>
+                            <option value="kidnapping">Kidnapping</option>
+                            <option value="cybercrime">Cybercrime</option>
+                            <option value="humantrafficking">Human Trafficking</option>
+                            <option value="blackmailing">Blackmailing</option>
+                            <option value="fakenews">Fake News</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="complaint">Describe the Crime</label>
+                        <textarea class="form-control" id="complaint" name="complaint" rows="4" placeholder="Provide a detailed description of the incident..." required></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-premium w-100" id="complaint-submit" style="background: linear-gradient(135deg, #f43f5e, #f59e0b);">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Report
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
