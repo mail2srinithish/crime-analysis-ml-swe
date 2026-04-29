@@ -15,8 +15,7 @@ const { auth, isLogedIn } = require('./middlewares/auth');
 const Crime = require('./models/complaint');
 const IPCData = require('./public/data/ipc');
 const SLLData = require('./public/data/sll');
-// ═══ AI FEATURE HIDDEN ═══
-// const { fetchAllNews } = require('./services/newsService');
+const { fetchAllNews } = require('./services/newsService');
 
 const sequelize = require('./db');
 const secret = process.env.JWT_SECRET || 'EDI@50';
@@ -138,13 +137,12 @@ app.get('/dashboard', auth, async (req, res) => {
   let safetyScores = await flaskGet('/api/ml/safety-scores');
   let clusters = await flaskGet('/api/ml/clusters');
   
-  // ═══ AI FEATURE HIDDEN: Live News Ticker ═══
-  // let liveNews = [];
-  // try {
-  //   const newsData = await fetchAllNews();
-  //   liveNews = newsData.articles.slice(0, 5);
-  // } catch (e) { /* ignore */ }
+  // Fetch a few live news headlines for the ticker
   let liveNews = [];
+  try {
+    const newsData = await fetchAllNews();
+    liveNews = newsData.articles.slice(0, 5);
+  } catch (e) { /* ignore */ }
 
   // ═══ AI FEATURE HIDDEN: OSINT Actionable Risk Alerts ═══
   // let osintAlerts = [];
@@ -262,18 +260,18 @@ app.get('/predict', auth, async (req, res) => {
   }
 });
 
-// ═══ AI FEATURE HIDDEN: Live News Feed ═══
-// app.get('/livefeed', auth, async (req, res) => {
-//   try {
-//     const newsData = await fetchAllNews();
-//     res.render('livefeed', { newsData });
-//   } catch (err) {
-//     console.log(err);
-//     res.render('livefeed', { 
-//       newsData: { articles: [], totalResults: 0, sources: {}, lastUpdated: new Date().toISOString() } 
-//     });
-//   }
-// });
+// Live News Feed
+app.get('/livefeed', auth, async (req, res) => {
+  try {
+    const newsData = await fetchAllNews();
+    res.render('livefeed', { newsData });
+  } catch (err) {
+    console.log(err);
+    res.render('livefeed', { 
+      newsData: { articles: [], totalResults: 0, sources: {}, lastUpdated: new Date().toISOString() } 
+    });
+  }
+});
 
 // State Comparison Page
 app.get('/compare', auth, async (req, res) => {
@@ -345,15 +343,15 @@ app.get('/statewise', auth, async (req, res) => {
 
 // ========= API ENDPOINTS =========
 
-// ═══ AI FEATURE HIDDEN: Live news API ═══
-// app.get('/api/live-news', async (req, res) => {
-//   try {
-//     const data = await fetchAllNews();
-//     res.json(data);
-//   } catch (err) {
-//     res.status(500).json({ error: 'Failed to fetch news' });
-//   }
-// });
+// Live news API (for AJAX polling)
+app.get('/api/live-news', async (req, res) => {
+  try {
+    const data = await fetchAllNews();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch news' });
+  }
+});
 
 // National trends
 app.get('/api/national-trends', (req, res) => {

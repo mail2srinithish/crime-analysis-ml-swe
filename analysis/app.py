@@ -109,7 +109,7 @@ def ml_compare():
 # ========= START =========
 if __name__ == "__main__":
     print("=" * 50)
-    print("  🧠 Crime Analysis ML Engine (Flask)")
+    print("  Crime Analysis ML Engine (Flask)")
     print("  Models: Random Forest, K-Means, Safety Score")
     print("=" * 50)
     app.run(port=5001, debug=True)
