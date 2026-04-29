@@ -2,20 +2,21 @@ const complaintModel = require('../models/complaint');
 const axios = require('axios');
 
 const createComplaint = async (req,res) => {
+    // === AI FEATURE HIDDEN: NLP Auto-Classification ===
     // Determine AI Priority via NLP Model
     let aiCategory = "Unclassified";
     let aiPriority = "MEDIUM";
-    try {
-        const mlResponse = await axios.post(`${process.env.FLASK_SERVER || 'http://localhost:5001'}/api/ml/classify-complaint`, {
-            text: req.body.complaint
-        });
-        if (mlResponse.data && mlResponse.data.priority) {
-            aiCategory = mlResponse.data.category;
-            aiPriority = mlResponse.data.priority;
-        }
-    } catch (mlErr) {
-        console.error("AI Error:", mlErr.message);
-    }
+    // try {
+    //     const mlResponse = await axios.post(`${process.env.FLASK_SERVER || 'http://localhost:5001'}/api/ml/classify-complaint`, {
+    //         text: req.body.complaint
+    //     });
+    //     if (mlResponse.data && mlResponse.data.priority) {
+    //         aiCategory = mlResponse.data.category;
+    //         aiPriority = mlResponse.data.priority;
+    //     }
+    // } catch (mlErr) {
+    //     console.error("AI Error:", mlErr.message);
+    // }
 
     const newComplaint = new complaintModel({
         fullName: req.body.fullName,

@@ -15,7 +15,8 @@ const { auth, isLogedIn } = require('./middlewares/auth');
 const Crime = require('./models/complaint');
 const IPCData = require('./public/data/ipc');
 const SLLData = require('./public/data/sll');
-const { fetchAllNews } = require('./services/newsService');
+// ═══ AI FEATURE HIDDEN ═══
+// const { fetchAllNews } = require('./services/newsService');
 
 const sequelize = require('./db');
 const secret = process.env.JWT_SECRET || 'EDI@50';
@@ -137,32 +138,33 @@ app.get('/dashboard', auth, async (req, res) => {
   let safetyScores = await flaskGet('/api/ml/safety-scores');
   let clusters = await flaskGet('/api/ml/clusters');
   
-  // Fetch a few live news headlines for the ticker
+  // ═══ AI FEATURE HIDDEN: Live News Ticker ═══
+  // let liveNews = [];
+  // try {
+  //   const newsData = await fetchAllNews();
+  //   liveNews = newsData.articles.slice(0, 5);
+  // } catch (e) { /* ignore */ }
   let liveNews = [];
-  try {
-    const newsData = await fetchAllNews();
-    liveNews = newsData.articles.slice(0, 5);
-  } catch (e) { /* ignore */ }
 
-  // Generate Phase 4: OSINT Actionable Risk Alerts
+  // ═══ AI FEATURE HIDDEN: OSINT Actionable Risk Alerts ═══
+  // let osintAlerts = [];
+  // IPCData.forEach(stateObj => {
+  //     const reports = stateObj.reports;
+  //     if (reports.length >= 2) {
+  //         const currentCrimes = reports[reports.length - 1];
+  //         const prevCrimes = reports[reports.length - 2];
+  //         const predictedNext = currentCrimes + (currentCrimes - prevCrimes);
+  //         const growth = ((predictedNext - currentCrimes) / Math.max(currentCrimes, 1)) * 100;
+  //         if (growth > 10.0 && currentCrimes > 1000) {
+  //             osintAlerts.push({
+  //                 state: stateObj.State,
+  //                 growth: growth.toFixed(1),
+  //                 urgency: growth > 20 ? 'CRITICAL' : 'HIGH'
+  //             });
+  //         }
+  //     }
+  // });
   let osintAlerts = [];
-  IPCData.forEach(stateObj => {
-      const reports = stateObj.reports;
-      if (reports.length >= 2) {
-          const currentCrimes = reports[reports.length - 1];
-          const prevCrimes = reports[reports.length - 2];
-          // Extrapolate next year loosely
-          const predictedNext = currentCrimes + (currentCrimes - prevCrimes);
-          const growth = ((predictedNext - currentCrimes) / Math.max(currentCrimes, 1)) * 100;
-          if (growth > 10.0 && currentCrimes > 1000) {
-              osintAlerts.push({
-                  state: stateObj.State,
-                  growth: growth.toFixed(1),
-                  urgency: growth > 20 ? 'CRITICAL' : 'HIGH'
-              });
-          }
-      }
-  });
 
   res.render('dashboard', {
     ipcData: IPCData,
@@ -197,22 +199,19 @@ app.get('/crime', auth, async (req, res) => {
   }
 });
 
-// Admin Triage UI
-app.get('/triage', auth, async (req, res) => {
-  try {
-    // Sort logic to pull CRITICAL and HIGH to the very top automatically
-    const complaints = await Crime.findAll({ order: [['createdAt', 'DESC']] });
-    // Soft-sort priority in memory for exact display ordering
-    const priorityOrder = { "CRITICAL": 1, "HIGH": 2, "MEDIUM": 3, "LOW": 4, "Unclassified": 5 };
-    complaints.sort((a,b) => priorityOrder[a.aiPriority] - priorityOrder[b.aiPriority]);
-    
-    res.render('triage', { complaints });
-  } catch (err) {
-    console.log(err);
-    req.flash('error', 'Could not load triage center');
-    res.redirect('/');
-  }
-});
+// ═══ AI FEATURE HIDDEN: Admin Triage UI ═══
+// app.get('/triage', auth, async (req, res) => {
+//   try {
+//     const complaints = await Crime.findAll({ order: [['createdAt', 'DESC']] });
+//     const priorityOrder = { "CRITICAL": 1, "HIGH": 2, "MEDIUM": 3, "LOW": 4, "Unclassified": 5 };
+//     complaints.sort((a,b) => priorityOrder[a.aiPriority] - priorityOrder[b.aiPriority]);
+//     res.render('triage', { complaints });
+//   } catch (err) {
+//     console.log(err);
+//     req.flash('error', 'Could not load triage center');
+//     res.redirect('/');
+//   }
+// });
 
 // ML Prediction Page
 app.get('/predict', auth, async (req, res) => {
@@ -263,18 +262,18 @@ app.get('/predict', auth, async (req, res) => {
   }
 });
 
-// Live News Feed
-app.get('/livefeed', auth, async (req, res) => {
-  try {
-    const newsData = await fetchAllNews();
-    res.render('livefeed', { newsData });
-  } catch (err) {
-    console.log(err);
-    res.render('livefeed', { 
-      newsData: { articles: [], totalResults: 0, sources: {}, lastUpdated: new Date().toISOString() } 
-    });
-  }
-});
+// ═══ AI FEATURE HIDDEN: Live News Feed ═══
+// app.get('/livefeed', auth, async (req, res) => {
+//   try {
+//     const newsData = await fetchAllNews();
+//     res.render('livefeed', { newsData });
+//   } catch (err) {
+//     console.log(err);
+//     res.render('livefeed', { 
+//       newsData: { articles: [], totalResults: 0, sources: {}, lastUpdated: new Date().toISOString() } 
+//     });
+//   }
+// });
 
 // State Comparison Page
 app.get('/compare', auth, async (req, res) => {
@@ -346,15 +345,15 @@ app.get('/statewise', auth, async (req, res) => {
 
 // ========= API ENDPOINTS =========
 
-// Live news API (for AJAX polling)
-app.get('/api/live-news', async (req, res) => {
-  try {
-    const data = await fetchAllNews();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch news' });
-  }
-});
+// ═══ AI FEATURE HIDDEN: Live news API ═══
+// app.get('/api/live-news', async (req, res) => {
+//   try {
+//     const data = await fetchAllNews();
+//     res.json(data);
+//   } catch (err) {
+//     res.status(500).json({ error: 'Failed to fetch news' });
+//   }
+// });
 
 // National trends
 app.get('/api/national-trends', (req, res) => {
