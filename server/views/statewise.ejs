@@ -43,9 +43,10 @@
         </div>
     </div>
     <div class="col-lg-3 col-md-6 animate-in">
-        <div class="stat-card <%= stateScore.safety_score > 60 ? 'emerald' : stateScore.safety_score > 30 ? 'cyan' : 'rose' %>">
+        <% const scoreNum = parseFloat(stateScore.safety_score); %>
+        <div class="stat-card <%= (!isNaN(scoreNum) && scoreNum > 60) ? 'emerald' : (!isNaN(scoreNum) && scoreNum > 30) ? 'cyan' : 'rose' %>">
             <div class="stat-icon"><i class="fas fa-shield-halved"></i></div>
-            <div class="stat-value" style="font-size:1.4rem;"><%= stateScore.safety_score %><span style="font-size:0.7rem;">/100</span></div>
+            <div class="stat-value" style="font-size:1.4rem;"><%= isNaN(scoreNum) ? '—' : stateScore.safety_score %><span style="font-size:0.7rem;">/100</span></div>
             <div class="stat-label">Safety Score</div>
         </div>
     </div>
@@ -202,26 +203,81 @@ if (rfPred) {
 
 // District Map Integration
 const districtHotspots = <%- JSON.stringify(districtHotspots) %>;
+const currentStateName = <%- JSON.stringify(stateName) %>;
+
+// Bounding boxes [minLat, minLng, maxLat, maxLng] for each Indian state/UT
+const STATE_BOUNDS = {
+    'Andhra Pradesh':           [12.6, 76.8, 19.9, 84.7],
+    'Arunachal Pradesh':        [26.7, 91.6, 29.5, 97.4],
+    'Assam':                    [24.1, 89.7, 28.2, 96.0],
+    'Bihar':                    [24.3, 83.3, 27.5, 88.3],
+    'Chhattisgarh':             [17.8, 80.3, 24.1, 84.4],
+    'Goa':                      [14.9, 73.7, 15.8, 74.3],
+    'Gujarat':                  [20.1, 68.2, 24.7, 74.5],
+    'Haryana':                  [27.6, 74.5, 30.9, 77.6],
+    'Himachal Pradesh':         [30.4, 75.6, 33.2, 79.0],
+    'Jammu and Kashmir':        [32.3, 73.7, 37.1, 78.5],
+    'Jharkhand':                [21.9, 83.3, 25.3, 87.9],
+    'Karnataka':                [11.6, 74.1, 18.4, 78.6],
+    'Kerala':                   [8.3,  74.9, 12.8, 77.4],
+    'Madhya Pradesh':           [21.1, 74.0, 26.9, 82.9],
+    'Maharashtra':              [15.6, 72.6, 22.0, 80.9],
+    'Manipur':                  [23.8, 93.0, 25.7, 94.8],
+    'Meghalaya':                [25.0, 89.8, 26.1, 92.8],
+    'Mizoram':                  [21.9, 92.3, 24.5, 93.4],
+    'Nagaland':                 [25.2, 93.3, 27.1, 95.2],
+    'Odisha':                   [17.8, 81.4, 22.6, 87.5],
+    'Punjab':                   [29.5, 73.9, 32.5, 76.9],
+    'Rajasthan':                [23.1, 69.5, 30.2, 78.2],
+    'Sikkim':                   [27.1, 88.0, 28.1, 88.9],
+    'Tamil Nadu':               [8.1,  76.2, 13.6, 80.4],
+    'Telangana':                [15.8, 77.2, 19.9, 81.1],
+    'Tripura':                  [22.9, 91.2, 24.5, 92.4],
+    'Uttar Pradesh':            [23.9, 77.1, 30.4, 84.6],
+    'Uttarakhand':              [28.7, 77.6, 31.5, 81.0],
+    'West Bengal':              [21.5, 85.8, 27.3, 89.9],
+    'Delhi':                    [28.4, 76.8, 28.9, 77.4],
+    'Chandigarh':               [30.6, 76.7, 30.8, 76.9],
+    'Puducherry':               [11.7, 79.6, 12.1, 80.2],
+    'Andaman & Nicobar Islands':[6.0,  92.2, 14.0, 94.0],
+    'Dadra and Nagar Haveli':   [20.0, 72.9, 20.6, 73.4],
+    'Daman and Diu':            [20.3, 72.8, 20.7, 72.9],
+    'Lakshadweep':              [10.0, 72.0, 12.0, 74.0]
+};
+
 if(districtHotspots && districtHotspots.length > 0) {
-    const map = L.map('districtMap').setView([20.5937, 78.9629], 5);
+    const sb = STATE_BOUNDS[currentStateName] || [8.0, 68.0, 37.0, 97.5];
+    const latMin = sb[0], lngMin = sb[1], latMax = sb[2], lngMax = sb[3];
+    const latRange = latMax - latMin;
+    const lngRange = lngMax - lngMin;
+
+    const mapCenter = [(latMin + latMax) / 2, (lngMin + lngMax) / 2];
+    const map = L.map('districtMap').setView(mapCenter, 6);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO'
     }).addTo(map);
 
     let bounds = [];
     districtHotspots.forEach(d => {
-        // Pseudo-random coordinates scattered around central India for mock display if no geo-data exists.
-        // For a real app, you'd match the district name to lat/long. Let's just create a scatter based on a hash of the name for visual effect.
-        const hash = d.district.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
-        // Base center roughly India
-        const lat = 20.5937 + (hash % 100) / 10.0 * (hash % 2 === 0 ? 1 : -1);
-        const lng = 78.9629 + ((hash >> 4) % 100) / 10.0 * (hash % 3 === 0 ? 1 : -1);
-        
+        // Use real coordinates from server-side lookup; fall back to safe state-bounded scatter
+        let lat, lng;
+        if (d.lat !== null && d.lat !== undefined && d.lng !== null && d.lng !== undefined) {
+            lat = d.lat;
+            lng = d.lng;
+        } else {
+            // Fallback: deterministic scatter within state bounding box
+            const chars = d.district.split('');
+            const seed1 = chars.reduce((a, c) => (a + c.charCodeAt(0)) % 99991, 0);
+            const seed2 = chars.reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 99991, 1);
+            lat = latMin + (seed1 / 99991) * latRange;
+            lng = lngMin + (seed2 / 99991) * lngRange;
+        }
+
         let color = '#3b82f6';
-        if(d.risk_level === 4) color = '#ef4444';      // Very High
-        else if(d.risk_level === 3) color = '#f59e0b'; // High
-        else if(d.risk_level === 2) color = '#8b5cf6'; // Med
-        
+        if(d.risk_level === 4) color = '#ef4444';
+        else if(d.risk_level === 3) color = '#f59e0b';
+        else if(d.risk_level === 2) color = '#8b5cf6';
+
         const marker = L.circleMarker([lat, lng], {
             radius: d.risk_level * 3 + 4,
             fillColor: color,
@@ -230,17 +286,17 @@ if(districtHotspots && districtHotspots.length > 0) {
             opacity: 1,
             fillOpacity: 0.8
         }).addTo(map);
-        
+
         marker.bindPopup(`
             <div style="font-family:Inter;color:#333;">
                 <strong>District: ${d.district}</strong><br>
-                Target Level: ${d.risk_label}<br>
+                Risk Level: ${d.risk_label}<br>
                 Total Crime: ${d.total_crimes.toLocaleString('en-IN')}
             </div>
         `);
         bounds.push([lat, lng]);
     });
-    if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
+    if(bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50], maxZoom: 9 });
 } else {
     document.getElementById('districtMap').innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--text-muted);">No district-level heatmap data available for this state.</div>';
 }

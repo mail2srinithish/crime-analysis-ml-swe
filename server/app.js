@@ -11,10 +11,12 @@ const cookieParser = require('cookie-parser');
 const axios = require('axios');
 const userController = require('./controllers/userController');
 const complaintController = require('./controllers/complaintController');
+const { Op } = require('sequelize');
 const { auth, isLogedIn } = require('./middlewares/auth');
 const Crime = require('./models/complaint');
 const IPCData = require('./public/data/ipc');
 const SLLData = require('./public/data/sll');
+const DISTRICT_COORDS = require('./public/data/districtCoords');
 const { fetchAllNews } = require('./services/newsService');
 
 const sequelize = require('./db');
@@ -56,7 +58,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ========= DATABASE =========
-sequelize.sync()
+sequelize.sync({ alter: true })
   .then(() => {
     console.log('✅ SQLite Database connected and synchronized.');
   })
@@ -102,6 +104,74 @@ async function flaskGet(endpoint) {
   }
 }
 
+// ========= HELPER: Safety Score Computation — NCRB crimes-per-lakh method =========
+// Population estimates (in lakhs, 2024) aligned with NCRB reporting units
+const STATE_POPULATION_LAKH = {
+  'Andhra Pradesh': 530, 'Arunachal Pradesh': 16, 'Assam': 362, 'Bihar': 1250,
+  'Chhattisgarh': 315, 'Goa': 16, 'Gujarat': 695, 'Haryana': 296,
+  'Himachal Pradesh': 75, 'Jammu and Kashmir': 145, 'Jharkhand': 405,
+  'Karnataka': 710, 'Kerala': 362, 'Madhya Pradesh': 915, 'Maharashtra': 1380,
+  'Manipur': 34, 'Meghalaya': 38, 'Mizoram': 13, 'Nagaland': 24, 'Odisha': 488,
+  'Punjab': 315, 'Rajasthan': 850, 'Sikkim': 7, 'Tamil Nadu': 795,
+  'Telangana': 408, 'Tripura': 43, 'Uttar Pradesh': 2350, 'Uttarakhand': 118,
+  'West Bengal': 1030, 'Delhi': 210, 'Chandigarh': 12,
+  'Andaman & Nicobar Islands': 4, 'Andaman and Nicobar Islands': 4,
+  'Dadra and Nagar Haveli': 5, 'Dadra and Nagar Haveli and Daman and Diu': 6,
+  'Daman and Diu': 3, 'Lakshadweep': 1, 'Puducherry': 17, 'Ladakh': 3
+};
+
+// Detects and corrects anomalous ML projections using a linear trend baseline.
+// Tamil Nadu and Gujarat have known data spikes post-2017 that inflate projections.
+function getRepresentativeCount(reports) {
+  const n = reports.length;
+  if (n < 4) return reports[n - 1] || 0;
+  // Fit linear trend on first 12 historical data points (pre-projection period)
+  const histN = Math.min(12, n);
+  const xs = Array.from({ length: histN }, (_, i) => i);
+  const ys = reports.slice(0, histN);
+  const sumX = xs.reduce((a, b) => a + b, 0);
+  const sumY = ys.reduce((a, b) => a + b, 0);
+  const sumXY = xs.reduce((acc, x, i) => acc + x * ys[i], 0);
+  const sumX2 = xs.reduce((acc, x) => acc + x * x, 0);
+  const denom = histN * sumX2 - sumX * sumX;
+  const slope = denom !== 0 ? (histN * sumXY - sumX * sumY) / denom : 0;
+  const intercept = (sumY - slope * sumX) / histN;
+  // Extrapolate trend to current year
+  const trendVal = Math.max(slope * (n - 1) + intercept, ys[0]);
+  const actual = reports[n - 1] || 0;
+  // If actual > 3× trend (anomaly detected), cap at 1.5× trend for fair scoring
+  return (trendVal > 0 && actual > trendVal * 3) ? Math.round(trendVal * 1.5) : actual;
+}
+
+function computeSafetyScores() {
+  const rateData = IPCData.map(s => {
+    const pop = STATE_POPULATION_LAKH[s.State] || 50;
+    // Use anomaly-corrected crime counts for fair comparison
+    const ipcVal = getRepresentativeCount(s.reports);
+    const stateSLL = SLLData.find(x => x.State === s.State);
+    const sllVal = stateSLL ? getRepresentativeCount(stateSLL.reports) : 0;
+    // NCRB crime rate = IPC crimes per lakh population; SLL has lower weight
+    const crimeRate = (ipcVal + sllVal * 0.25) / pop;
+    return { State: s.State, crimeRate, ipcVal: s.reports[s.reports.length - 1] || 0, sllVal: sllVal };
+  });
+
+  // Absolute NCRB-calibrated scale: Delhi ≈ 1500/lakh is "0 safety", 0/lakh is "100"
+  // This matches real NCRB 2022 ranges (national avg ~422, Delhi ~1450, low states ~150)
+  const RATE_MAX = 1500;
+  return rateData.map(({ State, crimeRate, ipcVal, sllVal }) => {
+    const safetyScore = parseFloat(
+      Math.max(0, Math.min(100, (1 - crimeRate / RATE_MAX) * 100)).toFixed(1)
+    );
+    let riskLabel;
+    if (safetyScore >= 75) riskLabel = 'Very Low';
+    else if (safetyScore >= 55) riskLabel = 'Low';
+    else if (safetyScore >= 35) riskLabel = 'Medium';
+    else if (safetyScore >= 15) riskLabel = 'High';
+    else riskLabel = 'Very High';
+    return { state: State, safety_score: safetyScore, risk_label: riskLabel, ipc_crimes: ipcVal, sll_crimes: sllVal };
+  }).sort((a, b) => b.safety_score - a.safety_score);
+}
+
 // ========= HELPER: Linear regression fallback =========
 function linearPredict(reports, forecastYears = 5) {
   const n = reports.length;
@@ -136,7 +206,20 @@ app.get('/dashboard', auth, async (req, res) => {
   // Try to get safety scores and clusters from Flask ML
   let safetyScores = await flaskGet('/api/ml/safety-scores');
   let clusters = await flaskGet('/api/ml/clusters');
-  
+
+  // Complaint stats for dashboard panel
+  let complaintStats = { total: 0, critical: 0, pending: 0, today: 0 };
+  try {
+    const allComplaints = await Crime.findAll();
+    const todayStr = new Date().toDateString();
+    complaintStats = {
+      total: allComplaints.length,
+      critical: allComplaints.filter(c => c.aiPriority === 'CRITICAL').length,
+      pending: allComplaints.filter(c => c.status === 'Pending').length,
+      today: allComplaints.filter(c => new Date(c.createdAt).toDateString() === todayStr).length
+    };
+  } catch (e) { /* ignore if DB not ready */ }
+
   // Fetch a few live news headlines for the ticker
   let liveNews = [];
   try {
@@ -164,13 +247,17 @@ app.get('/dashboard', auth, async (req, res) => {
   // });
   let osintAlerts = [];
 
+  // Use computed safety scores — Flask pkl data is broken (returns 0 for most states)
+  safetyScores = computeSafetyScores();
+
   res.render('dashboard', {
     ipcData: IPCData,
     sllData: SLLData,
-    safetyScores: safetyScores || [],
+    safetyScores: safetyScores,
     osintAlerts: osintAlerts,
     clusters: clusters || [],
-    liveNews
+    liveNews,
+    complaintStats
   });
 });
 
@@ -197,19 +284,54 @@ app.get('/crime', auth, async (req, res) => {
   }
 });
 
-// ═══ AI FEATURE HIDDEN: Admin Triage UI ═══
-// app.get('/triage', auth, async (req, res) => {
-//   try {
-//     const complaints = await Crime.findAll({ order: [['createdAt', 'DESC']] });
-//     const priorityOrder = { "CRITICAL": 1, "HIGH": 2, "MEDIUM": 3, "LOW": 4, "Unclassified": 5 };
-//     complaints.sort((a,b) => priorityOrder[a.aiPriority] - priorityOrder[b.aiPriority]);
-//     res.render('triage', { complaints });
-//   } catch (err) {
-//     console.log(err);
-//     req.flash('error', 'Could not load triage center');
-//     res.redirect('/');
-//   }
-// });
+// Admin Triage Center
+app.get('/triage', auth, async (req, res) => {
+  try {
+    const { priority, status, state, type } = req.query;
+    const where = {};
+    if (priority && priority !== 'all') where.aiPriority = priority;
+    if (status && status !== 'all') where.status = status;
+    if (state && state !== 'all') where.state = state;
+    if (type && type !== 'all') where.complaintType = type;
+
+    const complaints = await Crime.findAll({ where, order: [['createdAt', 'DESC']] });
+    const priorityOrder = { 'CRITICAL': 1, 'HIGH': 2, 'MEDIUM': 3, 'LOW': 4, 'Unclassified': 5 };
+    complaints.sort((a, b) => priorityOrder[a.aiPriority] - priorityOrder[b.aiPriority]);
+
+    // Stats for summary cards
+    const allComplaints = await Crime.findAll();
+    const stats = {
+      total: allComplaints.length,
+      critical: allComplaints.filter(c => c.aiPriority === 'CRITICAL').length,
+      pending: allComplaints.filter(c => c.status === 'Pending').length,
+      resolved: allComplaints.filter(c => c.status === 'Resolved').length,
+      today: allComplaints.filter(c => {
+        const d = new Date(c.createdAt);
+        const now = new Date();
+        return d.toDateString() === now.toDateString();
+      }).length
+    };
+
+    res.render('triage', { complaints, stats, stateList, filters: req.query });
+  } catch (err) {
+    console.log(err);
+    req.flash('error', 'Could not load triage center');
+    res.redirect('/dashboard');
+  }
+});
+
+// Status update API for triage
+app.post('/triage/:id/status', auth, complaintController.updateStatus);
+
+// Delete complaint from triage
+app.delete('/triage/:id', auth, async (req, res) => {
+  try {
+    await Crime.destroy({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
 
 // ML Prediction Page
 app.get('/predict', auth, async (req, res) => {
@@ -289,11 +411,20 @@ app.get('/compare', auth, async (req, res) => {
     const s2ipc = IPCData.find(s => s.State === state2Name);
     const s1sll = SLLData.find(s => s.State === state1Name);
     const s2sll = SLLData.find(s => s.State === state2Name);
-    const years = Array.from({length: 18}, (_, i) => String(2003 + i));
+    const dataLen = Math.max(s1ipc?.reports?.length || 0, s2ipc?.reports?.length || 0, 18);
+    const years = Array.from({length: dataLen}, (_, i) => String(2003 + i));
+
+    // Get computed safety scores for comparison
+    const computedScores = computeSafetyScores();
+    const s1score = computedScores.find(s => s.state === state1Name);
+    const s2score = computedScores.find(s => s.state === state2Name);
+
     comparison = {
       years,
-      state1: { name: state1Name, ipc: s1ipc?.reports || [], sll: s1sll?.reports || [], safety_score: 'N/A', risk_label: 'N/A' },
-      state2: { name: state2Name, ipc: s2ipc?.reports || [], sll: s2sll?.reports || [], safety_score: 'N/A', risk_label: 'N/A' }
+      state1: { name: state1Name, ipc: s1ipc?.reports || [], sll: s1sll?.reports || [],
+                safety_score: s1score?.safety_score ?? 'N/A', risk_label: s1score?.risk_label ?? 'N/A' },
+      state2: { name: state2Name, ipc: s2ipc?.reports || [], sll: s2sll?.reports || [],
+                safety_score: s2score?.safety_score ?? 'N/A', risk_label: s2score?.risk_label ?? 'N/A' }
     };
   }
 
@@ -307,23 +438,26 @@ app.get('/statewise', auth, async (req, res) => {
   
   const stateIPC = IPCData.find(s => s.State === stateName);
   const stateSLL = SLLData.find(s => s.State === stateName);
-  const years = Array.from({length: 18}, (_, i) => String(2003 + i));
+  const dataLen = Math.max(stateIPC?.reports?.length || 0, stateSLL?.reports?.length || 0, 18);
+  const years = Array.from({length: dataLen}, (_, i) => String(2003 + i));
 
-  // Get safety scores from Flask
-  let safetyScores = await flaskGet('/api/ml/safety-scores');
-  let stateScore = null;
-  if (Array.isArray(safetyScores)) {
-    stateScore = safetyScores.find(s => s.state === stateName);
-  }
+  // Always use computed safety scores (Flask pkl returns 0 for most states)
+  const safetyScores = computeSafetyScores();
+  let stateScore = safetyScores.find(s => s.state === stateName) || null;
 
   // Get RF prediction from Flask
   let rfPred = await flaskGet(`/api/ml/predict/${encodeURIComponent(stateName)}?type=ipc&model=rf`);
   
-  // Get District Hotspots from Flask
+  // Get District Hotspots from Flask and enrich with real coordinates
   let districtsData = await flaskGet('/api/ml/districts');
   let districtHotspots = [];
   if (Array.isArray(districtsData)) {
-    districtHotspots = districtsData.filter(d => d.state === stateName);
+    districtHotspots = districtsData
+      .filter(d => d.state === stateName)
+      .map(d => {
+        const coords = DISTRICT_COORDS[d.district] || DISTRICT_COORDS[d.district.trim()];
+        return { ...d, lat: coords ? coords[0] : null, lng: coords ? coords[1] : null };
+      });
   }
   
   // Compute growth rates
@@ -335,7 +469,7 @@ app.get('/statewise', auth, async (req, res) => {
     ipcReports: stateIPC?.reports || [],
     sllReports: stateSLL?.reports || [],
     growthRates,
-    stateScore: stateScore || { safety_score: 'N/A', risk_label: 'N/A', crimes_per_lakh: 'N/A' },
+    stateScore: stateScore || computeSafetyScores().find(s => s.state === stateName) || { safety_score: 0, risk_label: 'Very High' },
     rfPrediction: rfPred && !rfPred.error ? rfPred : null,
     districtHotspots
   });
@@ -404,6 +538,27 @@ app.get('/api/export/csv', (req, res) => {
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
   res.send(rows.join('\n'));
+});
+
+// Complaints CSV Export
+app.get('/api/export/complaints', auth, async (req, res) => {
+  try {
+    const complaints = await Crime.findAll({ order: [['createdAt', 'DESC']] });
+    const rows = ['Ref#,Date,Name,Email,State,District,Address,Type,Priority,AICategory,Status,Description'];
+    complaints.forEach(c => {
+      const desc = `"${(c.complaint || '').replace(/"/g, '""')}"`;
+      rows.push([
+        c.refNumber || '', new Date(c.createdAt).toLocaleDateString('en-IN'),
+        c.fullName, c.email, c.state || '', c.district, c.address,
+        c.complaintType, c.aiPriority, c.aiCategory, c.status || 'Pending', desc
+      ].join(','));
+    });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=crime_reports.csv');
+    res.send(rows.join('\n'));
+  } catch (err) {
+    res.status(500).json({ error: 'Export failed' });
+  }
 });
 
 // Proxy to Flask ML

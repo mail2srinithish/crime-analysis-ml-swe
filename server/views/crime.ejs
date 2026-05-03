@@ -17,30 +17,71 @@
 
 <div class="row g-3">
 <% for(let crime of item){ %>
+    <%
+        const priorityColors = { CRITICAL:'#e11d48', HIGH:'#b45309', MEDIUM:'#0891b2', LOW:'#059669' };
+        const statusColors   = { 'Pending':'#b45309', 'Under Review':'#0891b2', 'Resolved':'#059669', 'Closed':'#94a3b8' };
+        const pColor = priorityColors[crime.aiPriority] || '#94a3b8';
+        const sColor = statusColors[crime.status] || '#94a3b8';
+    %>
     <div class="col-lg-6 animate-in">
-        <div class="complaint-card">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
+        <div class="complaint-card" style="<%= crime.aiPriority==='CRITICAL' ? 'border-left:3px solid #e11d48;' : '' %>">
+
+            <!-- Header row: type badge + ref + date -->
+            <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
                     <span class="complaint-type"><%= crime.complaintType %></span>
-                    <h5 style="font-weight: 600; margin: 0.5rem 0 0.25rem; font-size: 1rem;">
-                        <i class="fas fa-user me-1" style="color:var(--accent-blue);"></i> <%= crime.fullName %>
-                    </h5>
+                    <% if(crime.refNumber) { %>
+                    <code style="font-size:0.72rem; color:var(--accent-blue); background:rgba(37,99,235,0.07); padding:2px 7px; border-radius:5px; font-weight:600;">
+                        <%= crime.refNumber %>
+                    </code>
+                    <% } %>
                 </div>
                 <span class="complaint-meta">
-                    <i class="fas fa-calendar me-1"></i> <%= crime.crimeDate %>
+                    <i class="fas fa-calendar me-1"></i><%= crime.crimeDate %>
                 </span>
             </div>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+
+            <!-- Reporter name -->
+            <h5 style="font-weight: 600; margin: 0 0 0.4rem; font-size: 1rem;">
+                <i class="fas fa-user me-1" style="color:var(--accent-blue);"></i> <%= crime.fullName %>
+            </h5>
+
+            <!-- Complaint text -->
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem; line-height:1.5;">
                 <%= crime.complaint %>
             </p>
-            <div class="d-flex justify-content-between complaint-meta">
+
+            <!-- Location + email -->
+            <div class="d-flex justify-content-between complaint-meta flex-wrap gap-1 mb-2">
                 <span>
-                    <i class="fas fa-location-dot me-1"></i> <%= crime.district %>, <%= crime.address %>
+                    <i class="fas fa-location-dot me-1"></i>
+                    <% if(crime.state) { %><strong><%= crime.state %></strong>, <% } %><%= crime.district %>, <%= crime.address %>
                 </span>
                 <span>
                     <a href="mailto:<%= crime.email %>"><i class="fas fa-envelope me-1"></i><%= crime.email %></a>
                 </span>
             </div>
+
+            <!-- AI Priority + Status badges -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span style="font-size:0.72rem; padding:2px 9px; border-radius:6px; font-weight:700; background:<%= pColor %>18; color:<%= pColor %>;">
+                    <i class="fas fa-brain me-1" style="font-size:9px;"></i>AI: <%= crime.aiPriority %>
+                </span>
+                <span style="font-size:0.72rem; padding:2px 9px; border-radius:6px; font-weight:600; background:<%= sColor %>18; color:<%= sColor %>;">
+                    <i class="fas fa-circle-dot me-1" style="font-size:9px;"></i><%= crime.status || 'Pending' %>
+                </span>
+                <% if(crime.aiCategory && crime.aiCategory !== 'Unclassified') { %>
+                <span style="font-size:0.7rem; padding:2px 8px; border-radius:6px; background:rgba(0,0,0,0.04); color:var(--text-muted);">
+                    <%= crime.aiCategory %>
+                </span>
+                <% } %>
+            </div>
+
+            <% if(crime.officerNote) { %>
+            <div style="margin-top:0.5rem; font-size:0.78rem; color:var(--accent-emerald); background:rgba(5,150,105,0.06); padding:5px 10px; border-radius:6px;">
+                <i class="fas fa-note-sticky me-1"></i><strong>Officer Note:</strong> <%= crime.officerNote %>
+            </div>
+            <% } %>
         </div>
     </div>
 <% } %>

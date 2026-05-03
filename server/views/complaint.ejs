@@ -22,6 +22,15 @@
                         <input class="form-control" type="date" id="crimeDate" name="crimeDate" required />
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label" for="state">State / UT</label>
+                        <select class="form-select" name="state" id="state" required>
+                            <option value="" disabled selected>Select your state</option>
+                            <% stateList.forEach(function(s) { %>
+                                <option value="<%= s.name %>"><%= s.name %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label" for="district">District</label>
                         <input class="form-control" type="text" id="district" name="district" placeholder="Enter district" required />
                     </div>

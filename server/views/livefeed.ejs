@@ -75,20 +75,30 @@
                     </span>
                 </div>
                 <h6 style="font-weight: 600; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.5rem;">
+                    <% if(article.url && article.url !== 'undefined') { %>
                     <a href="<%= article.url %>" target="_blank" style="color: var(--text-primary); text-decoration: none;">
                         <%= article.title %>
                     </a>
+                    <% } else { %>
+                    <span style="color: var(--text-primary);"><%= article.title %></span>
+                    <% } %>
                 </h6>
-                <% if(article.description) { %>
-                <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+                <% if(article.description && article.description.trim()) { %>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">
                     <%= article.description.substring(0, 150) %><%= article.description.length > 150 ? '...' : '' %>
                 </p>
                 <% } %>
             </div>
             <div style="margin-top: auto; padding-top: 0.75rem;">
+                <% if(article.url && article.url !== 'undefined') { %>
                 <a href="<%= article.url %>" target="_blank" class="btn btn-outline-premium btn-sm w-100">
                     <i class="fas fa-external-link-alt me-1"></i> Read Full Article
                 </a>
+                <% } else { %>
+                <span class="btn btn-outline-premium btn-sm w-100" style="cursor:default; opacity:0.5;">
+                    <i class="fas fa-link-slash me-1"></i> Link Unavailable
+                </span>
+                <% } %>
             </div>
         </div>
     </div>

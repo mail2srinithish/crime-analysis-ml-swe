@@ -126,7 +126,7 @@
                         <td>
                             <span style="color: <%= s.safety_score > 60 ? 'var(--accent-emerald)' : s.safety_score > 30 ? 'var(--accent-amber)' : 'var(--accent-rose)' %>; font-weight: 700;">
                                 <%= s.safety_score %>
-                            </span>/100
+                            </span><span style="color:var(--text-secondary);font-weight:500;">/100</span>
                         </td>
                         <td>
                             <span style="font-size:0.7rem; padding:2px 6px; border-radius:4px; 
@@ -145,6 +145,59 @@
                 <tbody id="stateRankings"></tbody>
             </table>
             <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- Citizen Reports Panel -->
+<div class="row g-3 mb-4">
+    <div class="col-12 animate-in">
+        <div class="glass-card" style="border-left: 3px solid var(--accent-rose);">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="chart-title mb-0">
+                    <span class="dot rose"></span> Citizen Crime Reports (Live Intake)
+                </div>
+                <a href="/triage" class="btn btn-sm" style="background:var(--accent-rose);color:#fff;border-radius:8px;padding:0.35rem 1rem;font-size:0.82rem;">
+                    <i class="fas fa-truck-medical me-1"></i> Open Triage Center
+                </a>
+            </div>
+            <div class="row g-3 mt-2">
+                <div class="col-6 col-md-3">
+                    <div style="text-align:center;padding:0.75rem;background:rgba(37,99,235,0.05);border-radius:10px;">
+                        <div style="font-size:1.6rem;font-weight:800;color:var(--accent-blue);"><%= complaintStats.total %></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Reports</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div style="text-align:center;padding:0.75rem;background:rgba(225,29,72,0.05);border-radius:10px;">
+                        <div style="font-size:1.6rem;font-weight:800;color:var(--accent-rose);"><%= complaintStats.critical %></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Critical Alerts</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div style="text-align:center;padding:0.75rem;background:rgba(8,145,178,0.05);border-radius:10px;">
+                        <div style="font-size:1.6rem;font-weight:800;color:var(--accent-cyan);"><%= complaintStats.pending %></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Pending Review</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div style="text-align:center;padding:0.75rem;background:rgba(5,150,105,0.05);border-radius:10px;">
+                        <div style="font-size:1.6rem;font-weight:800;color:var(--accent-emerald);"><%= complaintStats.today %></div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Filed Today</div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <a href="/complaint" class="btn btn-outline-premium btn-sm">
+                    <i class="fas fa-file-signature me-1"></i> File a Report
+                </a>
+                <a href="/crime" class="btn btn-outline-premium btn-sm">
+                    <i class="fas fa-list-check me-1"></i> View All Reports
+                </a>
+                <a href="/api/export/complaints" class="btn btn-outline-premium btn-sm">
+                    <i class="fas fa-download me-1"></i> Export CSV
+                </a>
+            </div>
         </div>
     </div>
 </div>

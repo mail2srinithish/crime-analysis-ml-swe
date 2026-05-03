@@ -125,29 +125,29 @@
             </h4>
             <div class="row">
                 <div class="col-md-4">
-                    <div style="font-size: 2rem; font-weight: 700; color: #fff;"><%= requiredHeadcount.toLocaleString('en-IN') %></div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); padding-bottom: 5px;">Required Police Personnel (5-Yr Forecast)</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-cyan);"><%= requiredHeadcount.toLocaleString('en-IN') %></div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); padding-bottom: 5px;">Required Police Personnel (5-Yr Forecast)</div>
                 </div>
                 <div class="col-md-4">
                     <% if(deficit > 0) { %>
                         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-rose);">+<%= deficit.toLocaleString('en-IN') %></div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted);">Deficit Personnel Needed</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Deficit Personnel Needed</div>
                     <% } else { %>
                         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-emerald);"><%= Math.abs(deficit).toLocaleString('en-IN') %></div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted);">Surplus Personnel Allowed</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Surplus Personnel Allowed</div>
                     <% } %>
                 </div>
                 <div class="col-md-4">
                     <% if(deficit > 0) { %>
                         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-rose);">₹<%= budgetDeficit.toFixed(2) %> Cr</div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted);">Req. Budget Expansion (₹6.5L/Officer)</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Req. Budget Expansion (₹6.5L/Officer)</div>
                     <% } else { %>
                         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-emerald);">Optimal</div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted);">Budget Forecast</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Budget Forecast</div>
                     <% } %>
                 </div>
             </div>
-            <p style="margin-top: 1rem; font-size: 0.85rem; color: #94a3b8; margin-bottom: 0;">
+            <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0;">
                 *Based on a machine learning projection ratio of 1 law enforcement officer per 125 projected IPC/SLL crimes over the upcoming forecasted cycle for <strong><%= stateName %></strong>.
             </p>
         </div>
